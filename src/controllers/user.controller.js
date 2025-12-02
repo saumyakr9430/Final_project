@@ -5,15 +5,21 @@ import {uploadoncloudinary} from "../utils/cloudnary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 
+
 const registerUser = asynchandler(async(req,res) =>{
 
-  const {email ,fullname,password,username} = req.body
+  const {email ,fullName,password,username} = req.body
   console.log("email:",email)
-  if([email ,fullname,password,username].some((fields)=> fields?.trim() === "" )){
+  console.log("name:",fullName)
+  console.log("password:",password)
+  if([email ,fullName,password,username].some((fields)=> fields?.trim() === "" )){
     throw new ApiError(400,"all fields are required")
   }
 
-  const ExistedUser = User.findOne({
+  console.log("File:",req.files)
+  console.log("Body:",req.body)
+
+  const ExistedUser = await User.findOne({
     $or : [{email},{username}]
   })
 
@@ -22,31 +28,39 @@ const registerUser = asynchandler(async(req,res) =>{
   }
 
   const avatarlocalpath  = req.files?.avatar[0]?.path
-  const coverImagelocalpath  = req.files?.coverImage[0]?.path
+  // const coverImagelocalpath  = req.files?.coverImage[0]?.path
+
+  let coverImagelocalpath ;
+  if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+    coverImagelocalpath = req.files.coverImage[0].path
+  }
 
   if(!avatarlocalpath) {
     throw new ApiError(400,"Avatate Not Found")
   }
 
   const avatar = await uploadoncloudinary(avatarlocalpath)
-  const coverimage  = await uploadoncloudinary(coverImagelocalpath)
+  const coverImage  = await uploadoncloudinary(coverImagelocalpath)
 
   if(!avatar){
     throw new ApiError(409,"Avatar failed to upload")
     
   }
   
-  const user = User.create({
-    fullname,
+  const user = await User.create({
+    fullName,
     avatar : avatar.url,
-    coverimage : coverimage?.url || "" ,
+    coverImage : coverImage?.url || "" ,
     email,
     password,
     username : username.toLowerCase()
 
   })
+
+console.log("User object before findById:", user);
+console.log("ID being searched:", user?._id)
     
- const Createduser =  User.findById(user._id).select(
+ const Createduser =  await User.findById(user._id).select(
     "-password -refreshToken"
  )
 
