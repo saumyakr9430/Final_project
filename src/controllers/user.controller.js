@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiErorr.js";
 import {User} from "../models/user.model.js";
 import {uploadoncloudinary} from "../utils/cloudnary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
-
+import jwt from "jsonwebtoken"
 
 
 const generatAccessandRefreshtoken = async(userId) => {
@@ -100,7 +100,7 @@ const loginUser = asynchandler(async (req,res)=> {
      // send a response as successful
 
      const {email,username,password} =req.body
-    if(!username || !email){
+    if(!(username || email)){
      throw new ApiError(400,'username or password is required')
     }
     
@@ -167,4 +167,48 @@ const logoutUser = asynchandler(async(req,res)=>{
 
 })
 
-export {registerUser , loginUser, logoutUser}
+const refreshaccesstoken = asynchandler(async(req,res) => {
+  const incomingrefreshToken = req.cookies.refreshToken || req.body.refreshToken
+  if(!incomingrefreshToken){
+    throw new ApiError(404,"Token not found : ")
+  }
+
+  try {
+    const decodedToken =  jwt.verify(incomingrefreshToken,process.env.REFRESH_TOKEN_SECRET)
+    const user = await User.findById(decodedToken?._id)
+    if(!user){
+      throw new ApiError(401,'Invalid refresh token')
+    }
+  
+    if(incomingrefreshToken !== user?.refreshToken){
+      throw new ApiError(401,'refresh token is expired or used')
+    
+    }
+  
+    const options = {
+      httpOnly : true,
+      secure : true
+    }
+    
+    const {accessToken,newrefreshToken} = await generatAccessandRefreshtoken(User._id)
+    
+    return res
+      .status(200)
+      .cookie("accessToken",accessToken,options)
+      .cookie("refreshToken",newrefreshToken,options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            user:user,accessToken,refreshToken :newrefreshToken
+          },
+          "Token refreshed succesfully  "
+        )
+      )
+  
+  } catch (error) {
+    throw new ApiError(401,error?.message || "Failed to refresh token")
+  }
+
+})
+export {registerUser , loginUser, logoutUser ,refreshaccesstoken}

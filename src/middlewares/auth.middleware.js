@@ -1,8 +1,8 @@
-import { ApiError } from "../utils/ApiErorr";
-import { asynchandler } from "../utils/asynchandler";
+import { ApiError } from "../utils/ApiErorr.js";
+import { asynchandler } from "../utils/asynchandler.js";
 import jwt from "jsonwebtoken"
 import dotenv from 'dotenv'
-import { User } from "../models/user.model";
+import { User } from "../models/user.model.js";
 
 
 export const VerifyJWT = asynchandler(async(req,res,next)=>{
@@ -14,7 +14,7 @@ try {
             throw new ApiError(401,'Un Auth Request ')
          }
         
-         const decodedToken = await jwt.verify(token,process.env.ACCESS_TOKEN_SECRET)
+         const decodedToken =  jwt.verify(token,process.env.ACCESS_TOKEN_SECRET)
     
          const Usercheck = await User.findById(decodedToken?._id).select("-password -refreshToken")
     

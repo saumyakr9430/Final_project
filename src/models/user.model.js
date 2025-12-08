@@ -60,35 +60,43 @@ UserSchema.pre("save",async function (next){
     next()
 })
 
-UserSchema.methods.isPasswordcorrect = async function (passowrd) {
+UserSchema.methods.isPasswordcorrect = async function (password) {
     return await bcrypt.compare(password,this.password)
 }
 
 UserSchema.methods.generateAccessToken = function (){
-    return jwt.sign(
-        {
-            _id:this._id,
-            email:this.email,
-            username:this.username,
-            fullName:this.fullName
-        },
-        process.env.ACCESS_TOKEN_SECRET,
-        {
-            expiresIn:process.env.ACCESS_TOKEN_EXPIRY
-        }
-    )
+   try {
+     return jwt.sign(
+         {
+             _id:this._id,
+             email:this.email,
+             username:this.username,
+             fullName:this.fullName
+         },
+         process.env.ACCESS_TOKEN_SECRET,
+         {
+             expiresIn:process.env.ACCESS_TOKEN_EXPIRY
+         }
+     )
+   } catch (error) {
+    console.error("JWT signing failed:", error)
+   }
 }
 
 UserSchema.methods.generateRefreshToken = function (){
-     return jwt.sign(
-        {
-            _id:this._id
-        },
-        process.env.REFRESH_TOKEN_SECRET,
-        {
-            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
-        }
-    )
+try {
+         return jwt.sign(
+            {
+                _id:this._id
+            },
+            process.env.REFRESH_TOKEN_SECRET,
+            {
+                expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+            }
+        )
+} catch (error) {
+     console.error("JWT signing failed refresh token :", error)
+}
 }
 
 export const User = mongoose.model("User",UserSchema)
